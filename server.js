@@ -1,0 +1,68 @@
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import authRoutes from './routes/authroutes.js';
+import formRoutes from './routes/formRoutes.js';
+
+
+
+dotenv.config();
+
+const app = express();
+
+// ======================
+const getFrontendUrls = () => {
+    const urls = [
+      'http://localhost:8081',   
+    ];
+    if (process.env.FRONTEND_URL) {
+      const envUrls = process.env.FRONTEND_URL.split(',').map(url => url.trim());
+      urls.push(...envUrls);
+    }
+    return urls;
+  };
+  
+  app.use(cors({
+    origin: getFrontendUrls(),
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+  
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+
+  app.use('/api/auth', authRoutes);
+  
+
+
+  
+// ======================
+// Error Handling
+// ======================
+app.use((err, req, res, next) => {
+    console.error('[Server Error]', err.stack);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  });
+  
+  // ======================
+  // Start Server
+  // ======================
+  const PORT = process.env.PORT || 5001;
+  const HOST = process.env.HOST || '0.0.0.0';
+  app.listen(PORT, HOST, () => {
+    console.log(`
+    Server running:
+    - Environment: ${process.env.NODE_ENV || 'development'}
+    - URL: http://${HOST}:${PORT}
+    - Database: ${process.env.DB_NAME}@${process.env.DB_HOST}
+    - File Storage: Local uploads directory
+    `);
+  });
+  
+  export default app;
