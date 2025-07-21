@@ -3,7 +3,9 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import authRoutes from './routes/authroutes.js';
 import formRoutes from './routes/formRoutes.js';
-
+import respiratoryroutes from './routes/respiratoryRoutes.js';
+import temperatureRoutes from './routes/temperatureRoutes.js';
+import foodRoutes from './routes/foodRoutes.js';
 
 
 dotenv.config();
@@ -22,12 +24,7 @@ const getFrontendUrls = () => {
     return urls;
   };
   
-  app.use(cors({
-    origin: getFrontendUrls(),
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }));
+  app.use(cors());
   
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -35,7 +32,9 @@ const getFrontendUrls = () => {
 
   app.use('/api/auth', authRoutes);
   
-
+  app.use('/api/resp', respiratoryroutes);
+  app.use('/api/temp', temperatureRoutes);
+  app.use('/api/food', foodRoutes);
 
   
 // ======================

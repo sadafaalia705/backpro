@@ -117,6 +117,7 @@ export const register = async (req, res) => {
 
 // 4. Login
 export const login = async (req, res) => {
+  console.log('Login function called');
   const { email, password, role } = req.body;
 
   try {
@@ -254,7 +255,8 @@ export const getProfile = async (req, res) => {
 
 //Sleep tracking 
 export const addSleepLog = async (req, res) => {
-    const { userId, sleep_date, sleep_start, sleep_end, notes } = req.body;
+    const { sleep_date, sleep_start, sleep_end, notes } = req.body;
+    const userId = req.user.id; // Get user ID from authenticated request
 
     try {
         // Correct template string usage for date construction
@@ -291,11 +293,11 @@ export const addSleepLog = async (req, res) => {
 
 
 export const getWeeklySleepSummary = async (req, res) => {
-    const { userId } = req.params;
+    const userId = req.user.id; // Get user ID from authenticated request
 
     try {
-        const rows = await pool.query(`
-            SELECT sleep_date, duration_minutes 
+        const [rows] = await pool.query(`
+            SELECT sleep_date, sleep_start, sleep_end, duration_minutes, sleep_quality, notes
             FROM sleep_logs 
             WHERE user_id = ? 
               AND sleep_date >= CURDATE() - INTERVAL 7 DAY
