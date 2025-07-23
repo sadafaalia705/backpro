@@ -1,11 +1,16 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import authRoutes from './routes/authroutes.js';
+import authRoutes from './routes/authRoutes.js';
 import formRoutes from './routes/formRoutes.js';
 import respiratoryroutes from './routes/respiratoryRoutes.js';
 import temperatureRoutes from './routes/temperatureRoutes.js';
 import foodRoutes from './routes/foodRoutes.js';
+import waterRoutes from './routes/waterRoutes.js';
+import sleepRoutes from './routes/sleepRoutes.js';
+import heartRoutes from './routes/heartRoutes.js';
+import bpRoutes from './routes/bpRoutes.js';
+import stepRoutes from './routes/stepRoutes.js';
 
 
 dotenv.config();
@@ -31,10 +36,15 @@ const getFrontendUrls = () => {
 
 
   app.use('/api/auth', authRoutes);
+  app.use('/api/water', waterRoutes);
+  app.use('/api/sleep', sleepRoutes);
   
   app.use('/api/resp', respiratoryroutes);
   app.use('/api/temp', temperatureRoutes);
   app.use('/api/food', foodRoutes);
+  app.use('/api/heart', heartRoutes);
+  app.use('/api/bp', bpRoutes);
+  app.use('/api/step', stepRoutes);
 
   
 // ======================

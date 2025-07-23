@@ -1,11 +1,59 @@
 import { query } from '../config/db.js';
 import { sendFCMNotification } from '../utils/fcm.js';
 
-// API 1: Save water intake progress at 12 AM
+// API 1: Get today's water intake
+const getTodayWaterIntake = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const today = new Date().toISOString().split('T')[0];
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized - No user ID found in token' });
+    }
+
+    const sql = `
+      SELECT total_intake, goal_achieved, intake_logs, created_at, updated_at
+      FROM water_intake_records 
+      WHERE user_id = ? AND date = ?
+    `;
+
+    const results = await query(sql, [userId, today]);
+
+    if (results.length > 0) {
+      const record = results[0];
+      res.json({
+        total_intake: record.total_intake || 0,
+        goal_achieved: record.goal_achieved || false,
+        intake_logs: record.intake_logs ? JSON.parse(record.intake_logs) : [],
+        created_at: record.created_at,
+        updated_at: record.updated_at
+      });
+    } else {
+      // No record for today, return empty data
+      res.json({
+        total_intake: 0,
+        goal_achieved: false,
+        intake_logs: [],
+        created_at: null,
+        updated_at: null
+      });
+    }
+  } catch (error) {
+    console.error("Error getting water intake:", error);
+    res.status(500).json({ error: "Failed to get water intake.", details: error.message });
+  }
+};
+
+// API 2: Save water intake progress at 12 AM
 const recordDailyWaterIntake = async (req, res) => {
   try {
-    const { user_id, total_intake, intake_logs } = req.body;
+    const { total_intake, intake_logs } = req.body;
+    const userId = req.user?.id; // Get user ID from JWT token
     const today = new Date().toISOString().split('T')[0];
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized - No user ID found in token' });
+    }
 
     const goal = 2450;
     const goalAchieved = total_intake >= goal;
@@ -20,9 +68,9 @@ const recordDailyWaterIntake = async (req, res) => {
     `;
 
     console.log('Executing SQL:', sql);
-    console.log('Parameters:', [user_id, today, total_intake, goalAchieved, JSON.stringify(intake_logs)]);
+    console.log('Parameters:', [userId, today, total_intake, goalAchieved, JSON.stringify(intake_logs)]);
 
-    await query(sql, [user_id, today, total_intake, goalAchieved, JSON.stringify(intake_logs)]);
+    await query(sql, [userId, today, total_intake, goalAchieved, JSON.stringify(intake_logs)]);
 
     res.json({ message: "Water intake recorded successfully." });
   } catch (error) {
@@ -154,4 +202,4 @@ const sendWaterReminder = async (req, res) => {
     res.status(500).json({ error: "Reminder dispatch failed.", details: error.message });
   }
 };
-export { recordDailyWaterIntake, sendWaterReminder, updateReminderPreferences, getReminderPreferences };
+export { recordDailyWaterIntake, sendWaterReminder, updateReminderPreferences, getReminderPreferences, getTodayWaterIntake };

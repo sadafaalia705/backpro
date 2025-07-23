@@ -16,7 +16,7 @@ const getDatabaseConfig = () => {
   const host = process.env.DB_HOST || 'localhost';
   const port = process.env.DB_PORT || 3306;
   const user = process.env.DB_USER || 'root';
-  const password = process.env.DB_PASSWORD || '9588593004@vatS';
+  const password = process.env.DB_PASSWORD || '9588593004@Vats';
   const database = process.env.DB_NAME || 'ha';
 
   const databaseUrl = `mysql://${user}:${password}@${host}:${port}/${database}`;
