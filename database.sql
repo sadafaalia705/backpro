@@ -187,3 +187,20 @@ CREATE TABLE IF NOT EXISTS sugar_logs (
   glucose_level INT NOT NULL,
   notes TEXT
 );
+
+
+CREATE TABLE IF NOT EXISTS body_fat_records (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    weight_kg FLOAT NOT NULL,
+    height_cm FLOAT NOT NULL,
+    neck_cm FLOAT NOT NULL,
+    waist_cm FLOAT NOT NULL,
+    age INT NOT NULL,
+    gender ENUM('male', 'female') NOT NULL,
+    bmi FLOAT NOT NULL,
+    body_fat FLOAT NOT NULL,
+    recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_recorded (user_id, recorded_at DESC)
+);

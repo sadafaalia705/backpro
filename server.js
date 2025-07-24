@@ -13,7 +13,7 @@ import bpRoutes from './routes/bpRoutes.js';
 import stepRoutes from './routes/stepRoutes.js';
 import cardioRoutes from './routes/cardioRoutes.js';
 import sugarRoutes from './routes/sugarRoutes.js';
-import medicineReminderRoutes from './routes/medicineReminderRoutes.js'
+import bodyFatRoutes from './routes/bodyFatRoutes.js';
 
 dotenv.config();
 
@@ -49,9 +49,7 @@ const getFrontendUrls = () => {
   app.use('/api/step', stepRoutes);
   app.use('/api/cardio', cardioRoutes);
   app.use('/api/sugar', sugarRoutes);
-  app.use('/api/medicine-reminders', medicineReminderRoutes);
-  
-
+  app.use('/api/bodyfat', bodyFatRoutes);
   
 // ======================
 // Error Handling
