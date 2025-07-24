@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import authRoutes from './routes/authRoutes.js';
+import authRoutes from './routes/authroutes.js';
 import formRoutes from './routes/formRoutes.js';
 import respiratoryroutes from './routes/respiratoryRoutes.js';
 import temperatureRoutes from './routes/temperatureRoutes.js';
@@ -11,7 +11,9 @@ import sleepRoutes from './routes/sleepRoutes.js';
 import heartRoutes from './routes/heartRoutes.js';
 import bpRoutes from './routes/bpRoutes.js';
 import stepRoutes from './routes/stepRoutes.js';
-
+import cardioRoutes from './routes/cardioRoutes.js';
+import sugarRoutes from './routes/sugarRoutes.js';
+import medicineReminderRoutes from './routes/medicineReminderRoutes.js'
 
 dotenv.config();
 
@@ -45,6 +47,10 @@ const getFrontendUrls = () => {
   app.use('/api/heart', heartRoutes);
   app.use('/api/bp', bpRoutes);
   app.use('/api/step', stepRoutes);
+  app.use('/api/cardio', cardioRoutes);
+  app.use('/api/sugar', sugarRoutes);
+  app.use('/api/medicine-reminders', medicineReminderRoutes);
+  
 
   
 // ======================
