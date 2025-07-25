@@ -313,7 +313,7 @@ export const getWeeklySleepSummary = async (req, res) => {
 
 // Get all sleep logs for a user
 export const getUserSleepLogs = async (req, res) => {
-    const { userId } = req.params;
+    const userId = req.user.id; // Get user ID from authenticated request
 
     try {
         const [rows] = await pool.query(
@@ -323,6 +323,6 @@ export const getUserSleepLogs = async (req, res) => {
         res.status(200).json(rows);
     } catch (err) {
         console.error('[getUserSleepLogs]', err);
-        res.status(500).json({ error: 'Failed to retrieve sleep logs. Please try again.' });
-    }
+        res.status(500).json({ error: 'Failed to retrieve sleep logs. Please try again.' });
+    }
 };

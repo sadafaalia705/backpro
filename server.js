@@ -14,6 +14,7 @@ import stepRoutes from './routes/stepRoutes.js';
 import cardioRoutes from './routes/cardioRoutes.js';
 import sugarRoutes from './routes/sugarRoutes.js';
 import bodyFatRoutes from './routes/bodyFatRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ const getFrontendUrls = () => {
   app.use('/api/cardio', cardioRoutes);
   app.use('/api/sugar', sugarRoutes);
   app.use('/api/bodyfat', bodyFatRoutes);
+  app.use('/api/profile', profileRoutes);
   
 // ======================
 // Error Handling

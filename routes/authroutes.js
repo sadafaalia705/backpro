@@ -22,14 +22,14 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
-router.get('/profile', authenticateJWT, getProfile);
+
 
 
 
 
 router.get("/getoxygen",authenticateJWT ,fetchOxygenRecords);
 router.post('/addsleep', authenticateJWT, addSleepLog);
-router.get('/:userId', getUserSleepLogs);
+router.get('/getsleep', authenticateJWT, getUserSleepLogs);
 router.get('/weekly-summary', authenticateJWT, getWeeklySleepSummary);
 
 
@@ -43,6 +43,8 @@ router.get("/getheartrate", authenticateJWT, getHeartRates);
 
 router.post("/addoxygen", authenticateJWT, createOxygenRecord);
 
+// GET - Get user profile
+router.get("/profile", authenticateJWT, getProfile);
 
 // Test endpoint to verify authentication
 router.get("/test-auth", authenticateJWT, (req, res) => {
