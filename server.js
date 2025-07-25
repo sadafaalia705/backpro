@@ -54,7 +54,7 @@ const getFrontendUrls = () => {
 // ======================
 // Error Handling
 // ======================
-app.use((err, req, res, next) => {
+  app.use((err, req, res, next) => {
     console.error('[Server Error]', err.stack);
     res.status(500).json({
       status: 'ERROR',
@@ -68,6 +68,13 @@ app.use((err, req, res, next) => {
   // ======================
   const PORT = process.env.PORT || 5001;
   const HOST = process.env.HOST || '0.0.0.0';
+
+  app.get('/', (req, res) => {
+    res.send('<h1>✅ Server is running...</h1>');
+  });
+
+
+
   app.listen(PORT, HOST, () => {
     console.log(`
     Server running:
