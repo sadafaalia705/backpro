@@ -3,6 +3,100 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../config/db.js';
 
+// Helper function to save user form data
+const saveUserFormData = async (userId, formData) => {
+  console.log('🔄 saveUserFormData called with userId:', userId);
+  console.log('🔄 Form data received:', formData);
+  
+  try {
+    const {
+      name,
+      age,
+      gender,
+      height,
+      weight,
+      bmi,
+      activityLevel,
+      sleepHours,
+      dietPreference,
+      healthGoal,
+      stressLevel,
+      healthScore
+    } = formData;
+
+    // Convert sleep hours to ENUM format
+    const convertSleepHours = (hours) => {
+      if (hours < 5) return '<5 hours';
+      if (hours >= 5 && hours < 6) return '5-6 hours';
+      if (hours >= 6 && hours <= 8) return '6-8 hours';
+      return '>8 hours';
+    };
+
+    // Check if user already has form data
+    console.log('🔍 Checking for existing user form data...');
+    const [existingForm] = await pool.query('SELECT id FROM user_forms WHERE user_id = ?', [userId]);
+    console.log('🔍 Existing form found:', existingForm.length > 0);
+    
+    if (existingForm.length > 0) {
+      console.log('🔄 Updating existing user form...');
+      // Update existing form
+      await pool.query(
+        `UPDATE user_forms SET 
+          name = ?, age = ?, gender = ?, height = ?, weight = ?, bmi = ?, activity_level = ?, sleep_hours = ?,
+          diet_preference = ?, goals = ?, stress_level = ?, health_score = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = ?`,
+        [
+          name,
+          age,
+          gender?.toLowerCase() || null,
+          height,
+          weight,
+          bmi || null,
+          activityLevel?.toLowerCase() || null,
+          sleepHours ? convertSleepHours(sleepHours) : null,
+          dietPreference?.toLowerCase() || null,
+          healthGoal || null,
+          stressLevel?.toLowerCase() || null,
+          healthScore || null,
+          userId
+        ]
+      );
+      console.log('✅ User form updated successfully');
+    } else {
+      console.log('🔄 Inserting new user form...');
+      // Insert new form
+      await pool.query(
+        `INSERT INTO user_forms (
+          user_id, name, age, gender, height, weight, bmi, activity_level, sleep_hours,
+          diet_preference, goals, stress_level, health_score
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          userId,
+          name,
+          age,
+          gender?.toLowerCase() || null,
+          height,
+          weight,
+          bmi || null,
+          activityLevel?.toLowerCase() || null,
+          sleepHours ? convertSleepHours(sleepHours) : null,
+          dietPreference?.toLowerCase() || null,
+          healthGoal || null,
+          stressLevel?.toLowerCase() || null,
+          healthScore || null
+        ]
+      );
+      console.log('✅ User form inserted successfully');
+    }
+    
+    console.log('User form data saved successfully for user:', userId);
+    return true;
+  } catch (error) {
+    console.error('Error saving user form data:', error);
+    return false;
+  }
+};
+
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // 1. Send OTP
@@ -73,7 +167,27 @@ export const verifyOTP = async (req, res) => {
 
 // 3. Register
 export const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  console.log('📥 Registration request body:', req.body);
+  
+  const { 
+    name, 
+    email, 
+    password,
+    // Health data fields (optional)
+    age,
+    gender,
+    height,
+    weight,
+    bmi,
+    activityLevel,
+    sleepHours,
+    dietPreference,
+    healthGoal,
+    stressLevel,
+    healthScore
+  } = req.body;
+  
+  console.log('🔍 Extracted health data:', { age, gender, height, weight, bmi, activityLevel, sleepHours, dietPreference, healthGoal, stressLevel, healthScore });
 
   try {
     const [verification] = await pool.query('SELECT * FROM email_verifications WHERE email = ? AND is_verified = true', [email]);
@@ -92,6 +206,7 @@ export const register = async (req, res) => {
 
     const [userResult] = await pool.query('SELECT user_id, name, email, role FROM users WHERE email = ?', [email]);
     const user = userResult[0];
+    console.log('👤 User created with ID:', user.user_id);
 
     await pool.query('DELETE FROM email_verifications WHERE email = ?', [email]);
 
@@ -108,7 +223,48 @@ export const register = async (req, res) => {
         </div>`
     });
 
-    res.status(201).json({ message: '🎉 Registration successful!', user });
+    // Generate JWT token for the new user
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-jwt-secret-key-2024-health-app';
+    const token = jwt.sign({ id: user.user_id }, jwtSecret, { expiresIn: '7d' });
+
+    // Save health data if provided
+    console.log('🔍 Checking if health data should be saved...');
+    console.log('🔍 Required fields:', { name, age, gender, height, weight });
+    
+    if (name && (age || gender || height || weight)) {
+      console.log('✅ Health data conditions met, saving...');
+      const formData = {
+        name,
+        age,
+        gender,
+        height,
+        weight,
+        bmi,
+        activityLevel,
+        sleepHours,
+        dietPreference,
+        healthGoal,
+        stressLevel,
+        healthScore
+      };
+      
+      console.log('📤 Form data to save:', formData);
+      
+      const formSaved = await saveUserFormData(user.user_id, formData);
+      if (formSaved) {
+        console.log('✅ Health data saved during registration for user:', user.user_id);
+      } else {
+        console.log('❌ Failed to save health data during registration for user:', user.user_id);
+      }
+    } else {
+      console.log('❌ Health data conditions not met. Required: name and at least one of age, gender, height, weight');
+    }
+
+    res.status(201).json({ 
+      message: '🎉 Registration successful!', 
+      user,
+      token 
+    });
   } catch (err) {
     console.error('[register]', err);
     res.status(500).json({ error: 'Registration failed. Please try again.' });

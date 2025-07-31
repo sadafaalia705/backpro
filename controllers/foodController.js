@@ -3,15 +3,15 @@ import { pool } from '../config/db.js';
 // Add a food log
 export const addFoodLog = async (req, res) => {
   try {
-    const { date, meal, name, calories, carbs, fat, protein, sodium, sugar } = req.body;
+    const { date, meal, name, calories, carbs, fat, protein, sodium, sugar, quantity } = req.body;
     const user_id = req.user.id;
     if (!date || !meal || !name) {
       return res.status(400).json({ error: 'date, meal, and name are required' });
     }
-    const query = `INSERT INTO food_logs (user_id, date, meal, name, calories, carbs, fat, protein, sodium, sugar)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const query = `INSERT INTO food_logs (user_id, date, meal, name, calories, carbs, fat, protein, sodium, sugar, quantity)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     const [result] = await pool.query(query, [
-      user_id, date, meal, name, calories || 0, carbs || 0, fat || 0, protein || 0, sodium || 0, sugar || 0
+      user_id, date, meal, name, calories || 0, carbs || 0, fat || 0, protein || 0, sodium || 0, sugar || 0, quantity || 1
     ]);
     res.status(201).json({ message: 'Food log added', id: result.insertId });
   } catch (err) {

@@ -9,9 +9,9 @@ import authenticateJWT from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/', authenticateJWT, addSugarReading);
-router.get('/history',authenticateJWT, getUserReadings);
-router.put('/:id',authenticateJWT, updateReading);
-router.delete('/:id',authenticateJWT, deleteReading);
+router.post('/addsugar', authenticateJWT, addSugarReading);
+router.get('/getsugar', authenticateJWT, getUserReadings);
+router.put('/updatesugar/:id', authenticateJWT, updateReading);
+router.delete('/deletesugar/:id', authenticateJWT, deleteReading);
 
 export default router;

@@ -3,6 +3,9 @@ import jwt from 'jsonwebtoken';
 // JWT authentication middleware
 const authenticateJWT = (req, res, next) => {
   console.log('🚀 authenticateJWT middleware called!');
+  console.log('🔍 Request URL:', req.url);
+  console.log('🔍 Request method:', req.method);
+  console.log('🔍 Authorization header:', req.headers.authorization ? 'Present' : 'Missing');
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     console.log('Authentication failed: No Bearer token provided');

@@ -19,22 +19,26 @@ const getDatabaseConfig = () => {
   const password = process.env.DB_PASSWORD || '9588593004@Vats';
   const database = process.env.DB_NAME || 'ha';
 
-  const databaseUrl = `mysql://${user}:${password}@${host}:${port}/${database}`;
-  console.log(`Using individual env vars, constructed URL: mysql://${user}:***@${host}:${port}/${database}`);
-  return databaseUrl;
+  console.log(`Using individual env vars: ${user}:***@${host}:${port}/${database}`);
+  return {
+    host,
+    port,
+    user,
+    password,
+    database,
+    waitForConnections: true,
+    connectionLimit: 20,
+    queueLimit: 0,
+    connectTimeout: 15000,
+    timezone: 'Z',
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
+  };
 };
 
-// Create the pool with DATABASE_URL
-const pool = mysql.createPool(getDatabaseConfig(), {
-  waitForConnections: true,
-  connectionLimit: 20,
-  queueLimit: 0,
-  connectTimeout: 15000, // 15 seconds
-  timezone: 'Z', // Use UTC
-  // Enable keep-alive
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 10000, // 10 seconds
-});
+// Create the pool with configuration
+const dbConfig = getDatabaseConfig();
+const pool = mysql.createPool(dbConfig);
 
 // Enhanced connection pool event listeners
 pool.on('connection', (connection) => {

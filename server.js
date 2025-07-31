@@ -15,6 +15,11 @@ import cardioRoutes from './routes/cardioRoutes.js';
 import sugarRoutes from './routes/sugarRoutes.js';
 import bodyFatRoutes from './routes/bodyFatRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
+import medicineRoutes from './routes/medicineRoutes.js';
+import userformroutes from './routes/userformRoutes.js';
+import fdRoutes from './routes/fdRoutes.js';
+import healthScoreRoutes from './routes/healthScoreRoutes.js'; 
+import holdRoutes from './routes/holdRoutes.js';
 
 dotenv.config();
 
@@ -52,6 +57,13 @@ const getFrontendUrls = () => {
   app.use('/api/sugar', sugarRoutes);
   app.use('/api/bodyfat', bodyFatRoutes);
   app.use('/api/profile', profileRoutes);
+  app.use('/api/medicine', medicineRoutes);
+  app.use('/api/form', formRoutes);
+  app.use('/api/user-form', userformroutes);
+  app.use('/api/foodlist', fdRoutes); 
+  app.use('/api/healthscore', healthScoreRoutes);
+  app.use('/api/hold', holdRoutes);
+
   
 // ======================
 // Error Handling
