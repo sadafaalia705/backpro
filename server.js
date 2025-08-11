@@ -20,6 +20,11 @@ import userformroutes from './routes/userformRoutes.js';
 import fdRoutes from './routes/fdRoutes.js';
 import healthScoreRoutes from './routes/healthScoreRoutes.js'; 
 import holdRoutes from './routes/holdRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
+import insightsRoutes from './routes/insightRoutes.js';
+import macroRoutes from './routes/macroRoutes.js';
+import aiBodyFatRoutes from './routes/aiBodyFatRoutes.js';
+import cardSequenceRoutes from './routes/cardSequenceRoutes.js';
 
 dotenv.config();
 
@@ -63,6 +68,12 @@ const getFrontendUrls = () => {
   app.use('/api/foodlist', fdRoutes); 
   app.use('/api/healthscore', healthScoreRoutes);
   app.use('/api/hold', holdRoutes);
+  app.use('/api/analytics', analyticsRoutes);
+  app.use('/api/insights', insightsRoutes);
+  app.use('/api/macros', macroRoutes);
+  app.use('/api/ai-bodyfat', aiBodyFatRoutes);
+  app.use('/api/card-sequence', cardSequenceRoutes);
+
 
   
 // ======================

@@ -7,7 +7,10 @@ const getTodayWaterIntake = async (req, res) => {
     const userId = req.user?.id;
     const today = new Date().toISOString().split('T')[0];
 
+    console.log('🔍 getTodayWaterIntake called with:', { userId, today });
+
     if (!userId) {
+      console.log('❌ No user ID found in token');
       return res.status(401).json({ error: 'Unauthorized - No user ID found in token' });
     }
 
@@ -17,19 +20,40 @@ const getTodayWaterIntake = async (req, res) => {
       WHERE user_id = ? AND date = ?
     `;
 
+    console.log('🔍 Executing SQL query:', sql);
+    console.log('🔍 Query parameters:', [userId, today]);
+
     const results = await query(sql, [userId, today]);
+
+    console.log('🔍 Query results:', results);
 
     if (results.length > 0) {
       const record = results[0];
-      res.json({
+      console.log('🔍 Found record:', record);
+      
+      // Safe JSON parsing
+      let intakeLogs = [];
+      try {
+        intakeLogs = record.intake_logs ? JSON.parse(record.intake_logs) : [];
+      } catch (parseError) {
+        console.error('❌ Error parsing intake_logs JSON:', parseError);
+        console.error('❌ Raw intake_logs value:', record.intake_logs);
+        intakeLogs = [];
+      }
+
+      const response = {
         total_intake: record.total_intake || 0,
         goal_achieved: record.goal_achieved || false,
-        intake_logs: record.intake_logs ? JSON.parse(record.intake_logs) : [],
+        intake_logs: intakeLogs,
         created_at: record.created_at,
         updated_at: record.updated_at
-      });
+      };
+
+      console.log('✅ Sending response:', response);
+      res.json(response);
     } else {
       // No record for today, return empty data
+      console.log('ℹ️ No record found for today, returning empty data');
       res.json({
         total_intake: 0,
         goal_achieved: false,
@@ -39,7 +63,13 @@ const getTodayWaterIntake = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error getting water intake:", error);
+    console.error("❌ Error getting water intake:", {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState
+    });
     res.status(500).json({ error: "Failed to get water intake.", details: error.message });
   }
 };

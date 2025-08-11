@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get('/today', authenticateJWT, getTodayWaterIntake);
 router.post('/record-water', authenticateJWT, recordDailyWaterIntake);
-router.post('/send-reminders', authenticateJWT, sendWaterReminder);
+router.get('/send-reminders', authenticateJWT, sendWaterReminder);
 router.post('/update-reminder-preferences', authenticateJWT, updateReminderPreferences);
 router.get('/get-reminder-preferences', authenticateJWT, getReminderPreferences);
 

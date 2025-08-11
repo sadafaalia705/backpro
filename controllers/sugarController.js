@@ -5,7 +5,7 @@ export const addSugarReading = async (req, res) => {
   console.log('User from token:', req.user);
   
   const userId = req.user.id; 
-  const { glucose_level, notes } = req.body;
+  const { glucose_level, notes, fasting_state } = req.body;
 
   if (!glucose_level) {
     console.log('Missing glucose_level in request');
@@ -17,11 +17,17 @@ export const addSugarReading = async (req, res) => {
     return res.status(401).json({ error: 'User authentication required' });
   }
 
+  // Validate fasting_state
+  if (fasting_state && !['Fasting', 'Post-Meal'].includes(fasting_state)) {
+    console.log('Invalid fasting_state:', fasting_state);
+    return res.status(400).json({ error: 'Fasting state must be either "Fasting" or "Post-Meal"' });
+  }
+
   try {
-    console.log('Executing INSERT query with values:', [userId, glucose_level, notes || null]);
+    console.log('Executing INSERT query with values:', [userId, glucose_level, notes || null, fasting_state || null]);
     const [result] = await pool.query(
-      `INSERT INTO sugar_logs (user_id, glucose_level, notes) VALUES (?, ?, ?)`,
-      [userId, glucose_level, notes || null]
+      `INSERT INTO sugar_logs (user_id, glucose_level, notes, fasting_state) VALUES (?, ?, ?, ?)`,
+      [userId, glucose_level, notes || null, fasting_state || null]
     );
 
     console.log('INSERT successful, insertId:', result.insertId);
@@ -40,6 +46,7 @@ export const addSugarReading = async (req, res) => {
       user_id: userId,
       glucose_level,
       notes,
+      fasting_state,
       recorded_at: insertedRecord[0].date_logged
     });
   } catch (error) {
@@ -60,7 +67,7 @@ export const addSugarReading = async (req, res) => {
 export const getUserReadings = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, user_id, glucose_level, notes, date_logged as recorded_at FROM sugar_logs WHERE user_id = ? ORDER BY date_logged DESC',
+      'SELECT id, user_id, glucose_level, notes, fasting_state, date_logged as recorded_at FROM sugar_logs WHERE user_id = ? ORDER BY date_logged DESC',
       [req.user.id]
     );
     res.json(rows);
@@ -71,11 +78,17 @@ export const getUserReadings = async (req, res) => {
 };
 
 export const updateReading = async (req, res) => {
-  const { glucose_level, notes } = req.body;
+  const { glucose_level, notes, fasting_state } = req.body;
+  
+  // Validate fasting_state
+  if (fasting_state && !['Fasting', 'Post-Meal'].includes(fasting_state)) {
+    return res.status(400).json({ error: 'Fasting state must be either "Fasting" or "Post-Meal"' });
+  }
+  
   try {
     await pool.query(
-      'UPDATE sugar_logs SET glucose_level = ?, notes = ? WHERE id = ?',
-      [glucose_level, notes, req.params.id]
+      'UPDATE sugar_logs SET glucose_level = ?, notes = ?, fasting_state = ? WHERE id = ?',
+      [glucose_level, notes, fasting_state || null, req.params.id]
     );
     res.json({ message: 'Reading updated' });
   } catch (err) {

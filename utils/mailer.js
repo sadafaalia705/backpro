@@ -31,6 +31,13 @@ const sendMail = async ({ to, subject, html, attachments }) => {
       console.log('📧 Email not configured - skipping email send');
       console.log('📧 Would have sent email to:', to);
       console.log('📧 Subject:', subject);
+      
+      // Extract OTP from HTML for development
+      const otpMatch = html.match(/(\d{6})/);
+      if (otpMatch) {
+        console.log('🔐 OTP for development:', otpMatch[1]);
+      }
+      
       return { messageId: 'mock-message-id', response: 'Email not configured' };
     }
 
