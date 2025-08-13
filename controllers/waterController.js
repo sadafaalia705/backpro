@@ -154,7 +154,46 @@ const updateReminderPreferences = async (req, res) => {
   }
 };
 
-// API 3: Get reminder preferences
+// API 3: Update FCM token for user
+const updateFCMToken = async (req, res) => {
+  try {
+    const { fcm_token } = req.body;
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    if (!fcm_token) {
+      return res.status(400).json({ error: "fcm_token is required" });
+    }
+
+    // Check if user preference exists
+    const checkSql = 'SELECT id FROM user_water_preferences WHERE user_id = ?';
+    const existingPreference = await query(checkSql, [userId]);
+
+    if (existingPreference.length > 0) {
+      // Update existing preference
+      const updateSql = 'UPDATE user_water_preferences SET fcm_token = ? WHERE user_id = ?';
+      await query(updateSql, [fcm_token, userId]);
+    } else {
+      // Create new preference with FCM token
+      const insertSql = 'INSERT INTO user_water_preferences (user_id, fcm_token, reminder_enabled) VALUES (?, ?, ?)';
+      await query(insertSql, [userId, fcm_token, true]);
+    }
+
+    console.log(`Updated FCM token for user ${userId}`);
+    res.json({ 
+      message: "FCM token updated successfully.",
+      fcm_token: fcm_token 
+    });
+  } catch (error) {
+    console.error("Error updating FCM token:", error);
+    res.status(500).json({ error: "Failed to update FCM token.", details: error.message });
+  }
+};
+
+// API 4: Get reminder preferences
 const getReminderPreferences = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -181,7 +220,63 @@ const getReminderPreferences = async (req, res) => {
   }
 };
 
-// API 3: Send reminder every 2 minutes (modified from 2 hours)
+// API 4: Get water intake history
+const getWaterIntakeHistory = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized - No user ID found in token' });
+    }
+
+    // Get user's weight for goal calculation
+    const userWeightSql = 'SELECT weight FROM user_forms WHERE user_id = ? ORDER BY created_at DESC LIMIT 1';
+    const userWeightResult = await query(userWeightSql, [userId]);
+    const userWeight = userWeightResult.length > 0 ? userWeightResult[0].weight : 60; // Default weight if not found
+
+    // Get water intake history (last 30 days)
+    const sql = `
+      SELECT date, total_intake, goal_achieved, intake_logs, created_at, updated_at
+      FROM water_intake_records 
+      WHERE user_id = ? 
+      ORDER BY date DESC 
+      LIMIT 30
+    `;
+
+    console.log('🔍 Executing water history SQL query for user:', userId);
+    const results = await query(sql, [userId]);
+
+    // Process results to include goal calculation
+    const history = results.map(record => {
+      const dailyGoal = userWeight * 35; // 35ml per kg of body weight
+      const percentage = dailyGoal > 0 ? Math.round((record.total_intake / dailyGoal) * 100) : 0;
+      
+      return {
+        date: record.date,
+        total_intake: record.total_intake || 0,
+        goal: dailyGoal,
+        percentage: percentage,
+        goal_achieved: record.goal_achieved || false,
+        created_at: record.created_at,
+        updated_at: record.updated_at
+      };
+    });
+
+    console.log(`✅ Found ${history.length} water intake records for user ${userId}`);
+    res.json(history);
+  } catch (error) {
+    console.error("❌ Error getting water intake history:", {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState
+    });
+    res.status(500).json({ error: "Failed to get water intake history.", details: error.message });
+  }
+};
+
+// API 5: Send reminder every 2 minutes (modified from 2 hours)
 const sendWaterReminder = async (req, res) => {
   console.log('sendWaterReminder API called');
   try {
@@ -196,29 +291,82 @@ const sendWaterReminder = async (req, res) => {
         });
       }
 
-      // Query for users with reminders enabled
-      const users = await query(`
-        SELECT user_id, fcm_token FROM user_water_preferences
-        WHERE reminder_enabled = TRUE
-      `);
-
-      let notifiedCount = 0;
-
-      for (const user of users) {
-        if (user.fcm_token) {
-          try {
-            await sendFCMNotification(user.fcm_token, "Time to drink water!");
-            console.log(`Reminder sent to user ${user.user_id}`);
-            notifiedCount++;
-          } catch (notifyErr) {
-            console.error(`Failed to send reminder to user ${user.user_id}:`, notifyErr.message);
-          }
-        } else {
-          console.log(`User ${user.user_id} has no FCM token.`);
-        }
+      // Get current user's reminder status and last water intake
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized - No user ID found in token' });
       }
 
-      res.json({ message: "Reminders processed.", users_count: users.length, notified: notifiedCount });
+      // Check if current user has reminders enabled
+      const userPreferenceSql = 'SELECT reminder_enabled, fcm_token FROM user_water_preferences WHERE user_id = ?';
+      const userPreferences = await query(userPreferenceSql, [userId]);
+      
+      if (userPreferences.length === 0) {
+        console.log(`No preferences found for user ${userId}, creating default preference`);
+        // Create default preference for user
+        await query('INSERT INTO user_water_preferences (user_id, reminder_enabled) VALUES (?, ?)', [userId, true]);
+      }
+
+      // Get today's water intake for the current user
+      const today = new Date().toISOString().split('T')[0];
+      const todayIntakeSql = 'SELECT total_intake FROM water_intake_records WHERE user_id = ? AND date = ?';
+      const todayIntake = await query(todayIntakeSql, [userId, today]);
+      
+      const currentIntake = todayIntake.length > 0 ? todayIntake[0].total_intake : 0;
+      
+      // Get user's actual weight from user_forms table
+      const userWeightSql = 'SELECT weight FROM user_forms WHERE user_id = ? ORDER BY created_at DESC LIMIT 1';
+      const userWeightResult = await query(userWeightSql, [userId]);
+      const userWeight = userWeightResult.length > 0 ? userWeightResult[0].weight : 60; // Default weight if not found
+      const dailyGoal = userWeight * 35; // 35ml per kg
+      
+      console.log(`User ${userId} - Current intake: ${currentIntake}ml, Goal: ${dailyGoal}ml`);
+
+      // Only send reminder if user has reminders enabled and hasn't met their goal
+      if (userPreferences.length > 0 && userPreferences[0].reminder_enabled && currentIntake < dailyGoal) {
+        const fcmToken = userPreferences[0].fcm_token;
+        
+        if (fcmToken) {
+          try {
+            await sendFCMNotification(fcmToken, "Time to drink water! Stay hydrated!");
+            console.log(`Reminder sent to user ${userId}`);
+            res.json({ 
+              message: "Reminder sent successfully.",
+              user_id: userId,
+              current_intake: currentIntake,
+              daily_goal: dailyGoal,
+              reminder_sent: true
+            });
+          } catch (notifyErr) {
+            console.error(`Failed to send reminder to user ${userId}:`, notifyErr.message);
+            res.json({ 
+              message: "Reminder processing completed with errors.",
+              user_id: userId,
+              error: notifyErr.message,
+              reminder_sent: false
+            });
+          }
+        } else {
+          console.log(`User ${userId} has no FCM token.`);
+          res.json({ 
+            message: "No FCM token available for user.",
+            user_id: userId,
+            reminder_sent: false,
+            note: "FCM token not configured"
+          });
+        }
+      } else {
+        console.log(`User ${userId} - Reminders disabled or goal already met`);
+        res.json({ 
+          message: "No reminder needed.",
+          user_id: userId,
+          current_intake: currentIntake,
+          daily_goal: dailyGoal,
+          reminder_sent: false,
+          reason: userPreferences.length === 0 ? "No preferences" : 
+                  !userPreferences[0].reminder_enabled ? "Reminders disabled" : "Goal already met"
+        });
+      }
 
     } catch (tableError) {
       console.log('Error checking user_water_preferences table:', tableError.message);
@@ -232,4 +380,4 @@ const sendWaterReminder = async (req, res) => {
     res.status(500).json({ error: "Reminder dispatch failed.", details: error.message });
   }
 };
-export { recordDailyWaterIntake, sendWaterReminder, updateReminderPreferences, getReminderPreferences, getTodayWaterIntake };
+export { recordDailyWaterIntake, sendWaterReminder, updateReminderPreferences, getReminderPreferences, getTodayWaterIntake, getWaterIntakeHistory, updateFCMToken };
