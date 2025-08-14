@@ -191,7 +191,21 @@ CREATE TABLE sugar_logs (
     date_logged DATETIME DEFAULT CURRENT_TIMESTAMP,
     glucose_level INT NOT NULL,
     notes TEXT,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    fasting_state ENUM('Fasting', 'Post-Meal') NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_fasting_state (fasting_state)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE sugar_records (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    glucose_level INT NOT NULL,
+    notes TEXT,
+    fasting_state ENUM('Fasting', 'Post-Meal') NULL,
+    recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_fasting_state (fasting_state),
+    INDEX idx_recorded_at (recorded_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE body_fat_records (
@@ -266,4 +280,47 @@ CREATE TABLE breath_hold_records (
   duration INT NOT NULL,
   date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS ai_body_fat_analysis (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    image_name VARCHAR(255),
+    body_fat_percentage DECIMAL(5,2),
+    analysis_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    image_base64 LONGTEXT,
+    gender ENUM('male', 'female') NOT NULL,
+    status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_analysis (user_id, analysis_date DESC),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE card_sequence (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    medicine_tracking_position TINYINT UNSIGNED DEFAULT 1,
+    calories_position TINYINT UNSIGNED DEFAULT 2,
+    water_position TINYINT UNSIGNED DEFAULT 3,
+    steps_position TINYINT UNSIGNED DEFAULT 4,
+    sleep_position TINYINT UNSIGNED DEFAULT 5,
+    blood_pressure_position TINYINT UNSIGNED DEFAULT 6,
+    heart_rate_position TINYINT UNSIGNED DEFAULT 7,
+    temperature_position TINYINT UNSIGNED DEFAULT 8,
+    breath_retention_position TINYINT UNSIGNED DEFAULT 9,
+    blood_oxygen_position TINYINT UNSIGNED DEFAULT 10,
+    cardio_position TINYINT UNSIGNED DEFAULT 11,
+    blood_sugar_position TINYINT UNSIGNED DEFAULT 12,
+    body_fat_position TINYINT UNSIGNED DEFAULT 13,
+    happiness_score_position TINYINT UNSIGNED DEFAULT 14,
+    analytics_position TINYINT UNSIGNED DEFAULT 15,
+    food_analytics_position TINYINT UNSIGNED DEFAULT 16,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user (user_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
